@@ -1,0 +1,27 @@
+{
+  "name": "google-photos-uploader",
+  "version": "0.1.0",
+  "description": "Monitors a folder and uploads the images and videos to Google Photos",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kpe-rainy/google-photos-uploader"
+  },
+  "author": "Kimmo Pekkola",
+  "license": "MIT",
+  "scripts": {
+    "watch": "tsc -w",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "command-line-args": "^5.1.1",
+    "command-line-usage": "^6.1.0",
+    "googleapis": "^45.0.0"
+  },
+  "devDependencies": {
+    "@types/command-line-args": "^5.0.0",
+    "@types/command-line-usage": "^5.0.1",
+    "@types/node": "^12.12.14",
+    "typescript": "^3.7.3"
+  }
+}
