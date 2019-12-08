@@ -1,8 +1,14 @@
-import { OptionDefinition } from "command-line-usage"
+import { CommandLineOptions } from "command-line-args"
 
-export const command: OptionDefinition = {
-  name: "config",
-  description: "Configures the Google Photos connection. This must be ran first."
+const config = (options: CommandLineOptions) => {
+  console.log("Config selected", options)
 }
 
-export const config = () => {}
+export const definition = {
+  command: {
+    name: "config",
+    description: "Configures the Google Photos connection. This must be ran first."
+  },
+  options: [],
+  exec: config
+}

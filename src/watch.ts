@@ -1,16 +1,32 @@
 import * as fs from "fs"
-import { OptionDefinition } from "command-line-usage"
-
-export const command: OptionDefinition = {
-  name: "watch",
-  description: "Starts watching the folder for new images and videos.",
-  defaultOption: true
-}
+import { CommandLineOptions } from "command-line-args"
 
 const watchPath = "/tmp"
 
-export const watch = () => {
+export const watch = (options: CommandLineOptions) => {
   fs.watch(watchPath, (event, filename) => {
     console.log(event, filename)
   })
+}
+
+export const definition = {
+  command: {
+    name: "watch",
+    description: "Starts watching the folder for new images and videos."
+  },
+  options: [
+    {
+      name: "folder",
+      alias: "f",
+      typeLabel: "{underline path}",
+      description: "The path of the watched folder."
+    },
+    {
+      name: "delete",
+      alias: "d",
+      type: Boolean,
+      description: "Delete file after successful upload."
+    }
+  ],
+  exec: watch
 }
