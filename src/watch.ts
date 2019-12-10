@@ -3,7 +3,7 @@ import { CommandLineOptions } from "command-line-args"
 
 const watchPath = "/tmp"
 
-export const watch = (options: CommandLineOptions) => {
+export const watch = async (options: CommandLineOptions) => {
   fs.watch(watchPath, (event, filename) => {
     console.log(event, filename)
   })

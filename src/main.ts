@@ -1,11 +1,15 @@
 import commandLineArgs from "command-line-args"
 import commandLineUsage, { Section, OptionDefinition } from "command-line-usage"
-import { definition as configdefinition } from "./config"
-import { definition as watchdefinition } from "./watch"
+import { definition as configDefinition } from "./config"
+import { definition as watchDefinition } from "./watch"
+import { definition as pruneDefinition } from "./prune"
+
+export const appName = "Google Photos Uploader"
 
 const definitions = {
-  [configdefinition.command.name]: configdefinition,
-  [watchdefinition.command.name]: watchdefinition
+  [configDefinition.command.name]: configDefinition,
+  [watchDefinition.command.name]: watchDefinition,
+  [pruneDefinition.command.name]: pruneDefinition
 }
 
 const helpCommand: OptionDefinition = {
@@ -13,10 +17,10 @@ const helpCommand: OptionDefinition = {
   description: "Print this usage guide."
 }
 
-const commands = [configdefinition.command, watchdefinition.command, helpCommand]
+const commands = [configDefinition.command, watchDefinition.command, pruneDefinition.command, helpCommand]
 
 const sectionTitle: Section = {
-  header: "Google Photos Uploader",
+  header: appName,
   content: "Monitors a folder and uploads new images and videos to Google Photos album."
 }
 
@@ -51,7 +55,7 @@ const showCommandHelp = (command: string) => {
   console.log(commandLineUsage([sectionTitle, sectionCommand, sectionHelpSynopsis, hasOptions ? sectionOptions : {}]))
 }
 
-const main = () => {
+const main = async () => {
   const mainOptions = commandLineArgs([{ name: "command", defaultOption: true }], { stopAtFirstUnknown: true })
   const argv = mainOptions._unknown || []
 
@@ -74,7 +78,7 @@ const main = () => {
       console.log(`Unknown option: ${error.optionName}`)
       process.exit(1)
     }
-    definitions[mainOptions.command].exec(commandOptions)
+    await definitions[mainOptions.command].exec(commandOptions)
   } else {
     console.log(`Unknown command: ${mainOptions.command}`)
   }
