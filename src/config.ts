@@ -12,7 +12,7 @@ const mkdir = promisify(fs.mkdir)
 const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
 
-type Config = {
+export type Config = {
   clientId?: string
   clientSecret?: string
   tokens?: Credentials
