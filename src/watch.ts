@@ -2,60 +2,101 @@ import fs from "fs"
 import path from "path"
 import { debounce } from "debounce"
 import { CommandLineOptions } from "command-line-args"
-import { OAuth2Client, Credentials } from "google-auth-library"
+import { OAuth2Client } from "google-auth-library"
 import { Config, readConfig } from "./config"
 import { promisify } from "util"
 import memoizee from "memoizee"
-
-const GooglePhotos = require("googlephotos")
 
 const readDir = promisify(fs.readdir)
 const unlink = promisify(fs.unlink)
 
 export const fetchMedia = async (config: Config) => {
-  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
+  const oauth2Client = new OAuth2Client()
   oauth2Client.setCredentials(config.tokens!)
-  const tokenResponse = await oauth2Client.refreshAccessToken()
 
   let media: any[] = []
-  const photos = new GooglePhotos(tokenResponse.credentials.access_token)
   let nextPageToken
   let response
   try {
     console.log(`Reading images from album ${config.albumName}...`)
     do {
-      response = await photos.mediaItems.search(config.albumId, 50, nextPageToken)
-      media = media.concat(response.mediaItems)
-    } while (response.nextPageToken)
+      response = await oauth2Client.request<any>({
+        method: "POST",
+        url: "https://photoslibrary.googleapis.com/v1/mediaItems:search",
+        body: JSON.stringify({
+          albumId: config.albumId,
+          pageSize: 100,
+          pageToken: nextPageToken
+        })
+      })
+      media = media.concat(response.data.mediaItems)
+      nextPageToken = response.data.nextPageToken
+    } while (nextPageToken)
     console.log(`Found ${media.length} images.`)
   } catch (error) {
-    console.log("Unable to get the album list.")
+    console.log("Unable to get the media item list.")
     console.log(error.message)
   }
   return media
 }
 
-const memoizedFetchMedia = memoizee(fetchMedia, { promise: true, maxAge: 60 * 60 * 1000 })
+const memoizedFetchMedia = memoizee(fetchMedia, {
+  promise: true,
+  maxAge: 60 * 60 * 1000
+})
 
 const uploadMedia = async (config: Config, files: string[], absPath: string) => {
-  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
+  const oauth2Client = new OAuth2Client()
   oauth2Client.setCredentials(config.tokens!)
-  const tokenResponse = await oauth2Client.refreshAccessToken()
 
-  console.log(`Uploading ${files}`)
+  const tokens = []
+  for (const file of files) {
+    console.log(`Uploading ${file}`)
+    try {
+      const response = await oauth2Client.request<any>({
+        method: "POST",
+        url: "https://photoslibrary.googleapis.com/v1/uploads",
+        headers: {
+          "Content-type": "application/octet-stream",
+          "X-Goog-Upload-File-Name": file,
+          "X-Goog-Upload-Protocol": "raw"
+        },
+        body: fs.createReadStream(path.join(absPath, file))
+      })
+      tokens.push(response.data)
+    } catch (error) {
+      console.log(`Uploading the file failed`)
+      console.log(error.message)
+    }
+  }
 
-  const photos = new GooglePhotos(tokenResponse.credentials.access_token)
-  try {
-    await photos.mediaItems.uploadMultiple(
-      config.albumId,
-      files.map(file => ({ name: file })),
-      absPath
-    )
-    memoizedFetchMedia.clear()
-    return true
-  } catch (error) {
-    console.log(`Unable to upload the files.`)
-    console.log(error.message)
+  if (tokens.length > 0) {
+    console.log(`Adding uploaded images to the album...`)
+
+    try {
+      await oauth2Client.request<any>({
+        method: "POST",
+        url: "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
+        body: JSON.stringify({
+          albumId: config.albumId,
+          newMediaItems: tokens.map(token => ({
+            description: `Uploaded by google-photos-uploader on ${Date.now()}`,
+            simpleMediaItem: { uploadToken: token }
+          })),
+          albumPosition: {
+            position: "FIRST_IN_ALBUM"
+          }
+        })
+      })
+
+      memoizedFetchMedia.clear()
+      return true
+    } catch (error) {
+      console.log(`Unable to create the images to the album.`)
+      console.log(error.message)
+    }
+  } else {
+    console.log(`There were no successfully uploaded files`)
   }
   return false
 }
@@ -105,6 +146,11 @@ export const watch = async (options: CommandLineOptions) => {
   const config = await readConfig(true)
   if (!config.tokens) {
     console.log("The authentication token is missing. Run 'config' command first.")
+    return
+  }
+  if (!config.albumId) {
+    console.log("The target album is not defined. Run 'config' command first.")
+    return
   }
 
   const absPath = path.resolve(options.folder)

@@ -1,7 +1,12 @@
+import fs from "fs"
+import path from "path"
 import { CommandLineOptions } from "command-line-args"
 import { Config, readConfig } from "./config"
 import { fetchMedia } from "./watch"
 import { OAuth2Client } from "google-auth-library"
+import { promisify } from "util"
+
+const unlink = promisify(fs.unlink)
 
 const getPrunedItems = async (config: Config, options: CommandLineOptions) => {
   const mediaItems: any[] = await fetchMedia(config)
@@ -14,27 +19,45 @@ const getPrunedItems = async (config: Config, options: CommandLineOptions) => {
   })
 }
 
+/*
+Google Photos doesn't provide functionality to delete images or videos but only remove them from the album and that's not working.
+
 const deleteMedia = async (config: Config, mediaItems: any[]) => {
-  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
+  const oauth2Client = new OAuth2Client()
   oauth2Client.setCredentials(config.tokens!)
-  const tokenResponse = await oauth2Client.refreshAccessToken()
-
-  console.log(`Uploading ${files}`)
-
-  const photos = new GooglePhotos(tokenResponse.credentials.access_token)
+  console.log(
+    JSON.stringify({
+      mediaItemIds: mediaItems.map(item => item.id)
+    })
+  )
   try {
-    await photos.mediaItems.uploadMultiple(
-      config.albumId,
-      files.map(file => ({ name: file })),
-      absPath
-    )
-    memoizedFetchMedia.clear()
-    return true
+    await oauth2Client.request<any>({
+      method: "POST",
+      url: `https://photoslibrary.googleapis.com/v1/albums/${config.albumId}:batchRemoveMediaItems`,
+      body: JSON.stringify({
+        mediaItemIds: mediaItems.map(item => item.id)
+      })
+    })
   } catch (error) {
-    console.log(`Unable to upload the files.`)
+    console.log(`Deleting the image failed`)
     console.log(error.message)
   }
-  return false
+}
+*/
+
+const deleteLocal = async (options: CommandLineOptions, mediaItems: any[]) => {
+  const absPath = path.resolve(options.folder)
+  console.log(`Deleting local files in path "${absPath}"`)
+
+  const promises = mediaItems.map(async item => {
+    try {
+      await unlink(path.join(absPath, item.filename))
+      console.log(`Deleted local file: ${item.filename}`)
+    } catch (error) {
+      console.log(`Unable to delete the local file: ${item.filename}`)
+    }
+  })
+  return Promise.all(promises)
 }
 
 export const prune = async (options: CommandLineOptions) => {
@@ -56,10 +79,18 @@ export const prune = async (options: CommandLineOptions) => {
   const config = await readConfig(true)
   if (!config.tokens) {
     console.log("The authentication token is missing. Run 'config' command first.")
+    return
+  }
+  if (!config.albumId) {
+    console.log("The target album is not defined. Run 'config' command first.")
+    return
   }
 
   const prunedItems = await getPrunedItems(config, options)
-  await deleteMedia(config, prunedItems)
+  //  await deleteMedia(config, prunedItems)
+  if (options["delete-local"]) {
+    await deleteLocal(options, prunedItems)
+  }
 }
 
 export const definition = {

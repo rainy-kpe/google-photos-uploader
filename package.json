@@ -19,7 +19,6 @@
     "debounce": "^1.2.0",
     "env-paths": "^2.2.0",
     "google-auth-library": "^5.6.1",
-    "googlephotos": "^0.2.5",
     "memoizee": "^0.4.14"
   },
   "devDependencies": {

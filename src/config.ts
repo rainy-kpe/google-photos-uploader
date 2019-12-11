@@ -6,8 +6,6 @@ import path from "path"
 import { promisify } from "util"
 import readline from "readline"
 
-const GooglePhotos = require("googlephotos")
-
 const mkdir = promisify(fs.mkdir)
 const readFile = promisify(fs.readFile)
 const writeFile = promisify(fs.writeFile)
@@ -93,15 +91,26 @@ const askAuthCode = async (config: Config, ask: (q: string) => Promise<string>) 
   }
 }
 
-const getAlbums = async (photos: typeof GooglePhotos) => {
+const getAlbums = async (config: Config) => {
+  const oauth2Client = new OAuth2Client()
+  oauth2Client.setCredentials(config.tokens!)
+
   let albums: any[] = []
-  console.log("Reading albums...")
+  let nextPageToken
+  let response
   try {
-    let response
+    console.log("Reading albums...")
     do {
-      response = await photos.albums.list(50, response && response.nextPageToken)
-      albums = albums.concat(response.albums)
-    } while (response.nextPageToken)
+      response = await oauth2Client.request<any>({
+        url: "https://photoslibrary.googleapis.com/v1/albums",
+        params: {
+          pageSize: 50,
+          pageToken: nextPageToken
+        }
+      })
+      albums = albums.concat(response.data.albums)
+      nextPageToken = response.data.nextPageToken
+    } while (nextPageToken)
   } catch (error) {
     console.log("Unable to get the album list.")
     console.log(error.message)
@@ -109,9 +118,23 @@ const getAlbums = async (photos: typeof GooglePhotos) => {
   return albums
 }
 
-const createAlbum = async (photos: typeof GooglePhotos, albumName: string) => {
+const createAlbum = async (config: Config, albumName: string) => {
+  const oauth2Client = new OAuth2Client()
+  oauth2Client.setCredentials(config.tokens!)
+
   try {
-    return await photos.albums.create(albumName)
+    console.log(`Creating new album: ${albumName}`)
+
+    const response = await oauth2Client.request<any>({
+      method: "POST",
+      url: "https://photoslibrary.googleapis.com/v1/albums",
+      body: JSON.stringify({
+        album: {
+          title: albumName
+        }
+      })
+    })
+    return response.data
   } catch (error) {
     console.log("Unable to get the album list.")
     console.log(error.message)
@@ -121,8 +144,7 @@ const createAlbum = async (photos: typeof GooglePhotos, albumName: string) => {
 
 const askAlbum = async (config: Config, ask: (q: string) => Promise<string>) => {
   if (config.tokens && config.tokens.access_token) {
-    const photos = new GooglePhotos(config.tokens.access_token)
-    const albums = await getAlbums(photos)
+    const albums = await getAlbums(config)
     console.log("\n* Select the target album:")
     albums.forEach((album, index) => {
       console.log(`${index + 1} = ${album.title}`)
@@ -142,7 +164,7 @@ const askAlbum = async (config: Config, ask: (q: string) => Promise<string>) => 
           }
         }
       } else if (selectedAlbum) {
-        const response = await createAlbum(photos, selectedAlbum)
+        const response = await createAlbum(config, selectedAlbum)
         if (response) {
           return {
             ...config,
