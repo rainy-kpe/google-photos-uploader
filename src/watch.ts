@@ -1,21 +1,18 @@
 import fs from "fs"
 import path from "path"
-import envPaths from "env-paths"
-import { appName } from "./main"
 import { debounce } from "debounce"
 import { CommandLineOptions } from "command-line-args"
 import { OAuth2Client, Credentials } from "google-auth-library"
-import { Config } from "./config"
+import { Config, readConfig } from "./config"
 import { promisify } from "util"
 import memoizee from "memoizee"
 
 const GooglePhotos = require("googlephotos")
 
-const readFile = promisify(fs.readFile)
 const readDir = promisify(fs.readdir)
 const unlink = promisify(fs.unlink)
 
-const fetchMedia = async (config: Config) => {
+export const fetchMedia = async (config: Config) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
   const tokenResponse = await oauth2Client.refreshAccessToken()
@@ -105,17 +102,7 @@ export const watch = async (options: CommandLineOptions) => {
     return
   }
 
-  const paths = envPaths(appName)
-
-  let config: Config = {}
-  const filePath = path.join(paths.config, "config.json")
-  if (fs.existsSync(filePath)) {
-    config = JSON.parse(await readFile(filePath, "utf8"))
-  } else {
-    console.log("The config file is missing. Run 'config' command first.")
-    return
-  }
-
+  const config = await readConfig(true)
   if (!config.tokens) {
     console.log("The authentication token is missing. Run 'config' command first.")
   }

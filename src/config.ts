@@ -20,6 +20,20 @@ export type Config = {
   albumName?: string
 }
 
+export const readConfig = async (silent: boolean) => {
+  const paths = envPaths(appName)
+
+  let config: Config = {}
+  const filePath = path.join(paths.config, "config.json")
+  if (fs.existsSync(filePath)) {
+    config = JSON.parse(await readFile(filePath, "utf8"))
+  } else if (!silent) {
+    console.log("The config file is missing. Run 'config' command first.")
+    process.exit(1)
+  }
+  return config
+}
+
 const askClientInfo = async (config: Config, ask: (q: string) => Promise<string>) => {
   console.log(
     "* Go to Google Developer portal (https://console.developers.google.com)\n" +
@@ -161,12 +175,9 @@ const config = async () => {
   try {
     await mkdir(paths.config, { recursive: true })
 
-    let config: Config = {}
     const filePath = path.join(paths.config, "config.json")
-    if (fs.existsSync(filePath)) {
-      config = JSON.parse(await readFile(filePath, "utf8"))
-    }
 
+    let config = await readConfig(true)
     config = await askClientInfo(config, ask)
     config = await askAuthCode(config, ask)
     config = await askAlbum(config, ask)
