@@ -124,7 +124,6 @@ const sync = async (config: Config, absPath: string, options: CommandLineOptions
   const localFiles = await readdirp.promise(absPath)
 
   // Compare the local files and what's on online
-  console.log(mediaItems)
   const newFiles = localFiles.filter(file => !mediaItems.find(item => item && item.filename === file.basename))
   if (newFiles.length > 0) {
     console.log(`New files found: ${newFiles.length}`)
