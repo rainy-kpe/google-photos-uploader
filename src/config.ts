@@ -92,7 +92,7 @@ const askAuthCode = async (config: Config, ask: (q: string) => Promise<string>) 
 }
 
 const getAlbums = async (config: Config) => {
-  const oauth2Client = new OAuth2Client()
+  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
   let albums: any[] = []
@@ -119,7 +119,7 @@ const getAlbums = async (config: Config) => {
 }
 
 const createAlbum = async (config: Config, albumName: string) => {
-  const oauth2Client = new OAuth2Client()
+  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
   try {

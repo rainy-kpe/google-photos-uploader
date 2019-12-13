@@ -2,14 +2,15 @@ import commandLineArgs from "command-line-args"
 import commandLineUsage, { Section, OptionDefinition } from "command-line-usage"
 import { definition as configDefinition } from "./config"
 import { definition as watchDefinition } from "./watch"
-import { definition as pruneDefinition } from "./prune"
+import cs from "console-stamp"
+
+cs(console)
 
 export const appName = "Google Photos Uploader"
 
 const definitions = {
   [configDefinition.command.name]: configDefinition,
-  [watchDefinition.command.name]: watchDefinition,
-  [pruneDefinition.command.name]: pruneDefinition
+  [watchDefinition.command.name]: watchDefinition
 }
 
 const helpCommand: OptionDefinition = {
@@ -17,7 +18,7 @@ const helpCommand: OptionDefinition = {
   description: "Print this usage guide."
 }
 
-const commands = [configDefinition.command, watchDefinition.command, pruneDefinition.command, helpCommand]
+const commands = [configDefinition.command, watchDefinition.command, helpCommand]
 
 const sectionTitle: Section = {
   header: appName,

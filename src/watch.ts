@@ -6,12 +6,12 @@ import { OAuth2Client } from "google-auth-library"
 import { Config, readConfig } from "./config"
 import { promisify } from "util"
 import memoizee from "memoizee"
+import readdirp, { EntryInfo } from "readdirp"
 
-const readDir = promisify(fs.readdir)
 const unlink = promisify(fs.unlink)
 
 export const fetchMedia = async (config: Config) => {
-  const oauth2Client = new OAuth2Client()
+  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
   let media: any[] = []
@@ -45,28 +45,28 @@ const memoizedFetchMedia = memoizee(fetchMedia, {
   maxAge: 60 * 60 * 1000
 })
 
-const uploadMedia = async (config: Config, files: string[], absPath: string) => {
-  const oauth2Client = new OAuth2Client()
+const uploadMedia = async (config: Config, files: EntryInfo[]) => {
+  const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
   const tokens = []
   for (const file of files) {
-    console.log(`Uploading ${file}`)
+    console.log(`Uploading ${file.path}`)
     try {
       const response = await oauth2Client.request<any>({
         method: "POST",
         url: "https://photoslibrary.googleapis.com/v1/uploads",
         headers: {
           "Content-type": "application/octet-stream",
-          "X-Goog-Upload-File-Name": file,
+          "X-Goog-Upload-File-Name": file.basename,
           "X-Goog-Upload-Protocol": "raw"
         },
-        body: fs.createReadStream(path.join(absPath, file))
+        body: fs.createReadStream(file.fullPath)
       })
       tokens.push(response.data)
     } catch (error) {
       console.log(`Uploading the file failed`)
-      console.log(error.message)
+      console.log(error)
     }
   }
 
@@ -101,11 +101,11 @@ const uploadMedia = async (config: Config, files: string[], absPath: string) => 
   return false
 }
 
-const deleteFiles = async (newFiles: string[], absPath: string) => {
+const deleteFiles = async (newFiles: EntryInfo[]) => {
   try {
     const promises = newFiles.map(file => {
-      console.log(`Deleting ${file}`)
-      return unlink(path.join(absPath, file))
+      console.log(`Deleting ${file.path}`)
+      return unlink(file.fullPath)
     })
     await Promise.all(promises)
   } catch (error) {
@@ -121,15 +121,15 @@ const deleteFiles = async (newFiles: string[], absPath: string) => {
 const sync = async (config: Config, absPath: string, options: CommandLineOptions) => {
   console.log(`Uploading local files to the online album: ${config.albumName}`)
   const mediaItems = await memoizedFetchMedia(config)
-  const localFiles = await readDir(absPath)
+  const localFiles = await readdirp.promise(absPath)
 
   // Compare the local files and what's on online
-  const newFiles = localFiles.filter(file => !mediaItems.find(item => item.filename === file))
+  const newFiles = localFiles.filter(file => !mediaItems.find(item => item.filename === file.basename))
   if (newFiles.length > 0) {
-    console.log(`New files found: ${newFiles}`)
-    const success = await uploadMedia(config, newFiles, absPath)
-    if (success && options.delete) {
-      await deleteFiles(newFiles, absPath)
+    console.log(`New files found: ${newFiles.length}`)
+    const success = await uploadMedia(config, newFiles)
+    if (success && options["delete-after-upload"]) {
+      await deleteFiles(newFiles)
     }
   } else {
     console.log("No new files found")
@@ -159,7 +159,7 @@ export const watch = async (options: CommandLineOptions) => {
   const debouncedSync = debounce(sync, 1000)
   await debouncedSync(config, absPath, options)
 
-  fs.watch(absPath, () => {
+  fs.watch(absPath, { recursive: true }, async () => {
     debouncedSync(config, absPath, options)
   })
 }
@@ -177,8 +177,7 @@ export const definition = {
       description: "The path of the watched folder."
     },
     {
-      name: "delete",
-      alias: "d",
+      name: "delete-after-upload",
       type: Boolean,
       description: "Delete file after successful upload."
     }
