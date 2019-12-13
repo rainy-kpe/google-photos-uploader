@@ -73,28 +73,32 @@ const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   if (tokens.length > 0) {
     console.log(`Adding uploaded images to the album...`)
 
-    try {
-      await oauth2Client.request<any>({
-        method: "POST",
-        url: "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
-        body: JSON.stringify({
-          albumId: config.albumId,
-          newMediaItems: tokens.map(token => ({
-            description: `Uploaded by google-photos-uploader on ${Date.now()}`,
-            simpleMediaItem: { uploadToken: token }
-          })),
-          albumPosition: {
-            position: "FIRST_IN_ALBUM"
-          }
-        })
-      })
+    const chunk = 40
+    for (let i = 0, j = tokens.length; i < j; i += chunk) {
+      const temparray = tokens.slice(i, i + chunk)
 
-      memoizedFetchMedia.clear()
-      return true
-    } catch (error) {
-      console.log(`Unable to create the images to the album.`)
-      console.log(error.message)
+      try {
+        await oauth2Client.request<any>({
+          method: "POST",
+          url: "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
+          body: JSON.stringify({
+            albumId: config.albumId,
+            newMediaItems: temparray.map(token => ({
+              description: `Uploaded by google-photos-uploader on ${Date.now()}`,
+              simpleMediaItem: { uploadToken: token }
+            })),
+            albumPosition: {
+              position: "FIRST_IN_ALBUM"
+            }
+          })
+        })
+      } catch (error) {
+        console.log(`Unable to create the images to the album.`)
+        console.log(error.message)
+      }
     }
+    memoizedFetchMedia.clear()
+    return true
   } else {
     console.log(`There were no successfully uploaded files`)
   }
