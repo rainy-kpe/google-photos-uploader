@@ -95,6 +95,7 @@ const uploadMedia = async (config: Config, files: EntryInfo[]) => {
       } catch (error) {
         console.log(`Unable to create the images to the album.`)
         console.log(error.message)
+        return false
       }
     }
     memoizedFetchMedia.clear()
