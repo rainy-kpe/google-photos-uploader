@@ -112,11 +112,21 @@ const deleteFiles = async (newFiles: EntryInfo[]) => {
   }
 }
 
+let syncOngoing = false
+let runSyncAgain = false
+
 // Sync:
 // - Get media from the album (maybe not always...)
 // - Upload new image and video files (+ add them to the cached media list)
 // - If delete flag is set delete the files after upload
 const sync = async (config: Config, absPath: string, options: CommandLineOptions) => {
+  if (syncOngoing) {
+    console.log("Sync is already running.")
+    runSyncAgain = true
+    return
+  }
+  syncOngoing = true
+
   console.log(`Uploading local files to the online album: ${config.albumName}`)
 
   let mediaItems: any[] = []
@@ -137,7 +147,13 @@ const sync = async (config: Config, absPath: string, options: CommandLineOptions
   } else {
     console.log("No new files found")
   }
+  syncOngoing = false
   console.log("Uploading finished")
+
+  if (runSyncAgain) {
+    runSyncAgain = false
+    sync(config, absPath, options)
+  }
 }
 
 export const watch = async (options: CommandLineOptions) => {
