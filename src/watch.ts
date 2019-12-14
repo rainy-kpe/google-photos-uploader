@@ -5,7 +5,6 @@ import { CommandLineOptions } from "command-line-args"
 import { OAuth2Client } from "google-auth-library"
 import { Config, readConfig } from "./config"
 import { promisify } from "util"
-import memoizee from "memoizee"
 import readdirp, { EntryInfo } from "readdirp"
 
 const unlink = promisify(fs.unlink)
@@ -18,7 +17,7 @@ export const fetchMedia = async (config: Config) => {
   let nextPageToken
   let response
   try {
-    console.log(`Reading images from album ${config.albumName}...`)
+    console.log(`Reading media from album ${config.albumName}...`)
     do {
       response = await oauth2Client.request<any>({
         method: "POST",
@@ -32,18 +31,13 @@ export const fetchMedia = async (config: Config) => {
       media = media.concat(response.data.mediaItems)
       nextPageToken = response.data.nextPageToken
     } while (nextPageToken)
-    console.log(`Found ${media.length} images.`)
+    console.log(`Found ${media.length} media files.`)
   } catch (error) {
     console.log("Unable to get the media item list.")
     console.log(error.message)
   }
   return media
 }
-
-const memoizedFetchMedia = memoizee(fetchMedia, {
-  promise: true,
-  maxAge: 60 * 60 * 1000
-})
 
 const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
@@ -71,7 +65,7 @@ const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   }
 
   if (tokens.length > 0) {
-    console.log(`Adding uploaded images to the album...`)
+    console.log(`Adding uploaded media to the album...`)
 
     const chunk = 40
     for (let i = 0, j = tokens.length; i < j; i += chunk) {
@@ -84,7 +78,7 @@ const uploadMedia = async (config: Config, files: EntryInfo[]) => {
           body: JSON.stringify({
             albumId: config.albumId,
             newMediaItems: temparray.map(token => ({
-              description: `Uploaded by google-photos-uploader on ${Date.now()}`,
+              description: `Uploaded by google-photos-uploader on ${new Date()}`,
               simpleMediaItem: { uploadToken: token }
             })),
             albumPosition: {
@@ -93,12 +87,11 @@ const uploadMedia = async (config: Config, files: EntryInfo[]) => {
           })
         })
       } catch (error) {
-        console.log(`Unable to create the images to the album.`)
+        console.log(`Unable to create the media to the album.`)
         console.log(error.message)
         return false
       }
     }
-    memoizedFetchMedia.clear()
     return true
   } else {
     console.log(`There were no successfully uploaded files`)
@@ -125,8 +118,13 @@ const deleteFiles = async (newFiles: EntryInfo[]) => {
 // - If delete flag is set delete the files after upload
 const sync = async (config: Config, absPath: string, options: CommandLineOptions) => {
   console.log(`Uploading local files to the online album: ${config.albumName}`)
-  const mediaItems = await memoizedFetchMedia(config)
+
+  let mediaItems: any[] = []
   const localFiles = await readdirp.promise(absPath)
+  // If --delete-after-upload is set there is no need to compare with the online content. We just upload everything that's in the folder.
+  if (!options["delete-after-upload"]) {
+    mediaItems = await fetchMedia(config)
+  }
 
   // Compare the local files and what's on online
   const newFiles = localFiles.filter(file => !mediaItems.find(item => item && item.filename === file.basename))
