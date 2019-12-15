@@ -44,33 +44,37 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
-  const tokens = []
-  for (const file of files) {
-    console.log(`Uploading ${file.path}`)
-    try {
-      const response = await oauth2Client.request<any>({
-        method: "POST",
-        url: "https://photoslibrary.googleapis.com/v1/uploads",
-        headers: {
-          "Content-type": "application/octet-stream",
-          "X-Goog-Upload-File-Name": file.basename,
-          "X-Goog-Upload-Protocol": "raw"
-        },
-        body: fs.createReadStream(file.fullPath)
-      })
-      tokens.push(response.data)
-    } catch (error) {
-      console.log(`Uploading the file failed`)
-      console.log(error)
+  files.sort((a, b) => a.basename.localeCompare(b.basename))
+
+  const chunk = 10
+  for (let i = 0, j = files.length; i < j; i += chunk) {
+    const filesChunk = files.slice(i, i + chunk)
+
+    // Upload the media files to the server
+    const tokens = []
+    for (const file of filesChunk) {
+      console.log(`Uploading ${file.path}`)
+      try {
+        const response = await oauth2Client.request<any>({
+          method: "POST",
+          url: "https://photoslibrary.googleapis.com/v1/uploads",
+          headers: {
+            "Content-type": "application/octet-stream",
+            "X-Goog-Upload-File-Name": file.basename,
+            "X-Goog-Upload-Protocol": "raw"
+          },
+          body: fs.createReadStream(file.fullPath)
+        })
+        tokens.push(response.data)
+      } catch (error) {
+        console.log(`Uploading the file failed`)
+        console.log(error)
+      }
     }
-  }
 
-  if (tokens.length > 0) {
-    console.log(`Adding uploaded media to the album...`)
-
-    const chunk = 40
-    for (let i = 0, j = tokens.length; i < j; i += chunk) {
-      const temparray = tokens.slice(i, i + chunk)
+    // Connect the media files to album
+    if (tokens.length > 0) {
+      console.log(`Adding uploaded media to the album...`)
 
       try {
         await oauth2Client.request<any>({
@@ -78,7 +82,7 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
           url: "https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate",
           body: JSON.stringify({
             albumId: config.albumId,
-            newMediaItems: temparray.map(token => ({
+            newMediaItems: tokens.map(token => ({
               description: `Uploaded by google-photos-uploader on ${new Date()}`,
               simpleMediaItem: { uploadToken: token }
             })),
@@ -92,10 +96,10 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
         console.log(error.message)
         return false
       }
+      return true
+    } else {
+      console.log(`There were no successfully uploaded files`)
     }
-    return true
-  } else {
-    console.log(`There were no successfully uploaded files`)
   }
   return false
 }
@@ -153,7 +157,7 @@ export const sync = async (config: Config, absPath: string, options: CommandLine
 
   if (runSyncAgain) {
     runSyncAgain = false
-    sync(config, absPath, options)
+    await sync(config, absPath, options)
   }
 }
 
