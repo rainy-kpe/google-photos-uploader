@@ -11,7 +11,9 @@
   "scripts": {
     "watch": "tsc -w",
     "build": "tsc",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --coverage --watch"
   },
   "dependencies": {
     "command-line-args": "^5.1.1",
@@ -20,6 +22,7 @@
     "debounce": "^1.2.0",
     "env-paths": "^2.2.0",
     "google-auth-library": "^5.6.1",
+    "node-watch": "^0.6.3",
     "readdirp": "^3.3.0"
   },
   "devDependencies": {
@@ -27,7 +30,10 @@
     "@types/command-line-usage": "^5.0.1",
     "@types/console-stamp": "^0.2.32",
     "@types/debounce": "^1.2.0",
+    "@types/jest": "^24.0.23",
     "@types/node": "^12.12.14",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.2.0",
     "typescript": "^3.7.3"
   }
 }

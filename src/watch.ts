@@ -1,4 +1,5 @@
 import fs from "fs"
+import nodeWatch from "node-watch"
 import path from "path"
 import { debounce } from "debounce"
 import { CommandLineOptions } from "command-line-args"
@@ -33,13 +34,13 @@ export const fetchMedia = async (config: Config) => {
     } while (nextPageToken)
     console.log(`Found ${media.length} media files.`)
   } catch (error) {
-    console.log("Unable to get the media item list.")
-    console.log(error.message)
+    console.warn("Unable to get the media item list.")
+    console.error(error.message)
   }
   return media
 }
 
-const uploadMedia = async (config: Config, files: EntryInfo[]) => {
+export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
@@ -99,7 +100,7 @@ const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   return false
 }
 
-const deleteFiles = async (newFiles: EntryInfo[]) => {
+export const deleteFiles = async (newFiles: EntryInfo[]) => {
   try {
     const promises = newFiles.map(file => {
       console.log(`Deleting ${file.path}`)
@@ -119,7 +120,7 @@ let runSyncAgain = false
 // - Get media from the album (maybe not always...)
 // - Upload new image and video files (+ add them to the cached media list)
 // - If delete flag is set delete the files after upload
-const sync = async (config: Config, absPath: string, options: CommandLineOptions) => {
+export const sync = async (config: Config, absPath: string, options: CommandLineOptions) => {
   if (syncOngoing) {
     console.log("Sync is already running.")
     runSyncAgain = true
@@ -178,7 +179,7 @@ export const watch = async (options: CommandLineOptions) => {
   const debouncedSync = debounce(sync, 1000)
   await debouncedSync(config, absPath, options)
 
-  fs.watch(absPath, { recursive: true }, async () => {
+  nodeWatch(absPath, { recursive: true }, async () => {
     debouncedSync(config, absPath, options)
   })
 }

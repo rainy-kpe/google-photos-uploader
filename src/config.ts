@@ -1,6 +1,6 @@
 import envPaths from "env-paths"
 import { OAuth2Client, Credentials } from "google-auth-library"
-import { appName } from "./main"
+import { appName } from "./common"
 import fs from "fs"
 import path from "path"
 import { promisify } from "util"

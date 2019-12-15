@@ -3,10 +3,9 @@ import commandLineUsage, { Section, OptionDefinition } from "command-line-usage"
 import { definition as configDefinition } from "./config"
 import { definition as watchDefinition } from "./watch"
 import cs from "console-stamp"
+import { appName } from "./common"
 
 cs(console)
-
-export const appName = "Google Photos Uploader"
 
 const definitions = {
   [configDefinition.command.name]: configDefinition,
