@@ -71,7 +71,7 @@ describe("sync", () => {
   it("Uploads new files to the server", async () => {
     mockReaddirp.mockReset()
     mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
-    await watch.sync({}, "", {})
+    await watch.sync({}, "", {}, new Set())
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(1)
     expect(mockUploadMedia).toBeCalledTimes(1)
@@ -80,7 +80,7 @@ describe("sync", () => {
   it("Deletes files after successful upload", async () => {
     mockReaddirp.mockReset()
     mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
-    await watch.sync({}, "", { "delete-after-upload": true })
+    await watch.sync({}, "", { "delete-after-upload": true }, new Set())
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(0)
     expect(mockUploadMedia).toBeCalledTimes(1)
@@ -93,19 +93,19 @@ describe("sync", () => {
     mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
     mockUploadMedia.mockReset()
     mockUploadMedia.mockImplementationOnce(async () => false)
-    await watch.sync({}, "", { "delete-after-upload": true })
+    await watch.sync({}, "", { "delete-after-upload": true }, new Set())
     expect(mockDeleteFiles).toBeCalledTimes(0)
   })
 
   it("Doesn't fetch media if --delete-after-upload flag is set", async () => {
     mockReaddirp.mockReset()
     mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
-    await watch.sync({}, "", { "delete-after-upload": true })
+    await watch.sync({}, "", { "delete-after-upload": true }, new Set())
     expect(mockFetchMedia).toBeCalledTimes(0)
   })
 
   it("Doesn't try to upload anything if there are no files", async () => {
-    await watch.sync({}, "", {})
+    await watch.sync({}, "", {}, new Set())
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(1)
     expect(mockUploadMedia).toBeCalledTimes(0)
@@ -120,7 +120,7 @@ describe("sync", () => {
       { filename: "Barfoo" },
       { filename: "Extra" }
     ])
-    await watch.sync({}, "", {})
+    await watch.sync({}, "", {}, new Set())
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(1)
     expect(mockUploadMedia).toBeCalledTimes(0)
@@ -137,8 +137,8 @@ describe("sync", () => {
         })
     )
 
-    const promise = watch.sync({}, "", {})
-    await watch.sync({}, "", {})
+    const promise = watch.sync({}, "", {}, new Set())
+    await watch.sync({}, "", {}, new Set())
     // The second sync() returns immediately so the first sync() is still running but hasn't had time to upload anything yet
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(1)

@@ -44,7 +44,7 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
-  files.sort((a, b) => a.basename.localeCompare(b.basename))
+  files.sort((a, b) => b.basename.localeCompare(a.basename))
 
   const chunk = 10
   for (let i = 0, j = files.length; i < j; i += chunk) {
@@ -124,7 +124,10 @@ let runSyncAgain = false
 // - Get media from the album (maybe not always...)
 // - Upload new image and video files (+ add them to the cached media list)
 // - If delete flag is set delete the files after upload
-export const sync = async (config: Config, absPath: string, options: CommandLineOptions) => {
+export const sync = async (config: Config, absPath: string, options: CommandLineOptions, changedFiles: Set<string>) => {
+  console.log(`Sync triggered by the following files: ${Array.from(changedFiles)}`)
+  changedFiles.clear()
+
   if (syncOngoing) {
     console.log("Sync is already running.")
     runSyncAgain = true
@@ -157,7 +160,7 @@ export const sync = async (config: Config, absPath: string, options: CommandLine
 
   if (runSyncAgain) {
     runSyncAgain = false
-    await sync(config, absPath, options)
+    await sync(config, absPath, options, new Set())
   }
 }
 
@@ -180,11 +183,13 @@ export const watch = async (options: CommandLineOptions) => {
   const absPath = path.resolve(options.folder)
   console.log(`Watching ${absPath} for changes`)
 
-  const debouncedSync = debounce(sync, 1000)
-  await debouncedSync(config, absPath, options)
+  const debouncedSync = debounce(sync, 3000)
+  await debouncedSync(config, absPath, options, new Set())
 
-  nodeWatch(absPath, { recursive: true }, async () => {
-    debouncedSync(config, absPath, options)
+  const changedFiles = new Set<string>()
+  nodeWatch(absPath, { recursive: true }, async (eventType: string, filename: string) => {
+    changedFiles.add(filename)
+    debouncedSync(config, absPath, options, changedFiles)
   })
 }
 
