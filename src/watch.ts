@@ -67,8 +67,8 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
         })
         tokens.push(response.data)
       } catch (error) {
-        console.log(`Uploading the file failed`)
-        console.log(error)
+        console.warn(`Uploading the file failed`)
+        console.error(error)
       }
     }
 
@@ -92,8 +92,8 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
           })
         })
       } catch (error) {
-        console.log(`Unable to create the media to the album.`)
-        console.log(error.message)
+        console.warn(`Unable to create the media to the album.`)
+        console.error(error.message)
         return false
       }
       return true
@@ -112,8 +112,8 @@ export const deleteFiles = async (newFiles: EntryInfo[]) => {
     })
     await Promise.all(promises)
   } catch (error) {
-    console.log(`Unable to delete the files.`)
-    console.log(error.message)
+    console.warn(`Unable to delete the files.`)
+    console.error(error.message)
   }
 }
 

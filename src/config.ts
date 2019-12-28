@@ -69,7 +69,7 @@ const askAuthCode = async (config: Config, ask: (q: string) => Promise<string>) 
       const tokenResponse = await oauth2Client.getToken(authCode)
       tokens = tokenResponse.tokens
     } catch (error) {
-      console.log(`Failed to get the access token (${error.message}).`)
+      console.warn(`Failed to get the access token (${error.message}).`)
     }
   } else {
     if (config.tokens) {
@@ -78,7 +78,7 @@ const askAuthCode = async (config: Config, ask: (q: string) => Promise<string>) 
         const tokenResponse = await oauth2Client.refreshAccessToken()
         tokens = tokenResponse.credentials
       } catch (error) {
-        console.log(`Failed to get the refresh the access token (${error.message}).`)
+        console.warn(`Failed to get the refresh the access token (${error.message}).`)
       }
     } else {
       console.log(`Refresh token is missing and the authentication code was not given. Unable to continue.`)
@@ -112,8 +112,8 @@ const getAlbums = async (config: Config) => {
       nextPageToken = response.data.nextPageToken
     } while (nextPageToken)
   } catch (error) {
-    console.log("Unable to get the album list.")
-    console.log(error.message)
+    console.warn("Unable to get the album list.")
+    console.error(error.message)
   }
   return albums
 }
@@ -136,8 +136,8 @@ const createAlbum = async (config: Config, albumName: string) => {
     })
     return response.data
   } catch (error) {
-    console.log("Unable to get the album list.")
-    console.log(error.message)
+    console.warn("Unable to get the album list.")
+    console.error(error.message)
     return undefined
   }
 }
@@ -207,7 +207,7 @@ const config = async () => {
     await writeFile(filePath, JSON.stringify(config, null, 2))
     console.log(`Wrote "${filePath}"`)
   } catch (error) {
-    console.log(error)
+    console.error(error)
   } finally {
     rl.close()
   }
