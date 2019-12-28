@@ -125,7 +125,7 @@ let runSyncAgain = false
 // - Upload new image and video files (+ add them to the cached media list)
 // - If delete flag is set delete the files after upload
 export const sync = async (config: Config, absPath: string, options: CommandLineOptions, changedFiles: Set<string>) => {
-  console.log(`Sync triggered by the following files: ${Array.from(changedFiles)}`)
+  console.log(`Sync triggered by the following files: ${Array.from(changedFiles).map(file => path.basename(file))}`)
   changedFiles.clear()
 
   if (syncOngoing) {
