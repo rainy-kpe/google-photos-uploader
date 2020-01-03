@@ -1,5 +1,10 @@
+import fs from "fs"
+import path from "path"
 import { OAuth2Client } from "google-auth-library"
 import { Config } from "./config"
+import { promisify } from "util"
+
+const unlink = promisify(fs.unlink)
 
 export const appName = "Google Photos Uploader"
 
@@ -24,8 +29,8 @@ export const getAlbums = async (config: Config) => {
       nextPageToken = response.data.nextPageToken
     } while (nextPageToken)
   } catch (error) {
-    console.log("Unable to get the album list.")
-    console.log(error.message)
+    console.warn("Unable to get the album list.")
+    console.error(error.message)
   }
   return albums
 }
@@ -48,8 +53,8 @@ export const createAlbum = async (config: Config, albumName: string) => {
     })
     return response.data
   } catch (error) {
-    console.log("Unable to get the album list.")
-    console.log(error.message)
+    console.warn("Unable to get the album list.")
+    console.error(error.message)
     return undefined
   }
 }
@@ -82,4 +87,21 @@ export const fetchMedia = async (config: Config) => {
     console.error(error.message)
   }
   return media
+}
+
+export const deleteFiles = async (filePaths: string[], silent = false) => {
+  try {
+    const promises = filePaths.map(file => {
+      if (!silent || fs.existsSync(file)) {
+        console.log(`Deleting ${path.basename(file)}`)
+        return unlink(file)
+      }
+    })
+    await Promise.all(promises)
+    return true
+  } catch (error) {
+    console.warn(`Unable to delete the files.`)
+    console.error(error.message)
+  }
+  return false
 }

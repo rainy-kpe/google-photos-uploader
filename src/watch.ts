@@ -5,11 +5,8 @@ import { debounce } from "debounce"
 import { CommandLineOptions } from "command-line-args"
 import { OAuth2Client } from "google-auth-library"
 import { Config, readConfig } from "./config"
-import { promisify } from "util"
 import readdirp, { EntryInfo } from "readdirp"
-import { fetchMedia } from "./common"
-
-const unlink = promisify(fs.unlink)
+import { fetchMedia, deleteFiles } from "./common"
 
 export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
@@ -75,19 +72,6 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
   return files.length > 0
 }
 
-export const deleteFiles = async (newFiles: EntryInfo[]) => {
-  try {
-    const promises = newFiles.map(file => {
-      console.log(`Deleting ${file.path}`)
-      return unlink(file.fullPath)
-    })
-    await Promise.all(promises)
-  } catch (error) {
-    console.warn(`Unable to delete the files.`)
-    console.error(error.message)
-  }
-}
-
 let syncOngoing = false
 let runSyncAgain = false
 
@@ -121,7 +105,7 @@ export const sync = async (config: Config, absPath: string, options: CommandLine
     console.log(`New files found: ${newFiles.length}`)
     const success = await uploadMedia(config, newFiles)
     if (success && options["delete-after-upload"]) {
-      await deleteFiles(newFiles)
+      await deleteFiles(newFiles.map(file => file.fullPath))
     }
   } else {
     console.log("No new files found")

@@ -2,7 +2,7 @@ import path from "path"
 import { OAuth2Client } from "google-auth-library"
 import { CommandLineOptions } from "command-line-args"
 import { readConfig, Config } from "./config"
-import { getAlbums, createAlbum, fetchMedia } from "./common"
+import { getAlbums, createAlbum, fetchMedia, deleteFiles } from "./common"
 
 export const addToAlbum = async (config: Config, albumId: string, ids: string[]) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
@@ -105,24 +105,25 @@ export const archive = async (options: CommandLineOptions) => {
     console.log(`Found ${archivedMedia.length} to be archived`)
   }
 
-  if (
-    await removeFromAlbum(
-      config,
-      originalAlbum.id,
-      archivedMedia.map(media => media.id)
-    )
-  ) {
-    await addToAlbum(
+  const removeOk = await removeFromAlbum(
+    config,
+    originalAlbum.id,
+    archivedMedia.map(media => media.id)
+  )
+  if (removeOk) {
+    const addOk = await addToAlbum(
       config,
       archiveAlbum.id,
       archivedMedia.map(media => media.id)
     )
-  }
-
-  // TODO: Remove local files
-  if (options.folder) {
-    const absPath = path.resolve(options.folder)
-    console.log(`Removing archived media files from the local path: ${absPath}`)
+    if (addOk && options.folder) {
+      const absPath = path.resolve(options.folder)
+      console.log(`Removing archived media files from the local path: ${absPath}`)
+      await deleteFiles(
+        archivedMedia.map(media => path.join(absPath, media.filename)),
+        true
+      )
+    }
   }
 }
 

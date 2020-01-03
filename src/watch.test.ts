@@ -19,15 +19,38 @@ jest.mock("readdirp", () => ({
   promise: mockReaddirp
 }))
 
+import fs from "fs"
 import * as watch from "./watch"
 import * as common from "./common"
+
+describe("uploadMedia", () => {
+  beforeEach(() => {
+    mockRequest.mockImplementationOnce(async () => [])
+    jest.spyOn(fs, "createReadStream").mockImplementation(() => ({} as any))
+  })
+
+  afterEach(() => {
+    mockRequest.mockReset()
+  })
+
+  it("Uploads all chunks", async () => {
+    mockRequest.mockImplementation(async () => ({
+      data: "foo"
+    }))
+    await watch.uploadMedia(
+      {},
+      new Array(100).fill(0).map((_, i) => ({ path: "", basename: `${i}`, fullPath: `${i}` }))
+    )
+    expect(mockRequest).toBeCalledTimes(100 + 10)
+  })
+})
 
 describe("sync", () => {
   beforeEach(() => {
     mockReaddirp.mockImplementationOnce(async () => [])
     mockFetchMedia = jest.spyOn(common, "fetchMedia").mockImplementationOnce(async () => [])
     mockUploadMedia = jest.spyOn(watch, "uploadMedia").mockImplementationOnce(async () => true)
-    mockDeleteFiles = jest.spyOn(watch, "deleteFiles").mockImplementationOnce(async () => {})
+    mockDeleteFiles = jest.spyOn(common, "deleteFiles").mockImplementationOnce(async () => true)
   })
 
   afterEach(() => {
@@ -39,7 +62,7 @@ describe("sync", () => {
 
   it("Uploads new files to the server", async () => {
     mockReaddirp.mockReset()
-    mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
+    mockReaddirp.mockImplementationOnce(async () => [{ fullPath: "Foobar" }, { fullPath: "Barfoo" }])
     await watch.sync({}, "", {}, new Set())
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(1)
@@ -48,7 +71,7 @@ describe("sync", () => {
 
   it("Deletes files after successful upload", async () => {
     mockReaddirp.mockReset()
-    mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
+    mockReaddirp.mockImplementationOnce(async () => [{ fullPath: "Foobar" }, { fullPath: "Barfoo" }])
     await watch.sync({}, "", { "delete-after-upload": true }, new Set())
     expect(mockReaddirp).toBeCalledTimes(1)
     expect(mockFetchMedia).toBeCalledTimes(0)
@@ -59,7 +82,7 @@ describe("sync", () => {
 
   it("Doesn't delete files if upload fails", async () => {
     mockReaddirp.mockReset()
-    mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
+    mockReaddirp.mockImplementationOnce(async () => [{ fullPath: "Foobar" }, { fullPath: "Barfoo" }])
     mockUploadMedia.mockReset()
     mockUploadMedia.mockImplementationOnce(async () => false)
     await watch.sync({}, "", { "delete-after-upload": true }, new Set())
@@ -68,7 +91,7 @@ describe("sync", () => {
 
   it("Doesn't fetch media if --delete-after-upload flag is set", async () => {
     mockReaddirp.mockReset()
-    mockReaddirp.mockImplementationOnce(async () => ["Foobar", "Barfoo"])
+    mockReaddirp.mockImplementationOnce(async () => [{ fullPath: "Foobar" }, { fullPath: "Barfoo" }])
     await watch.sync({}, "", { "delete-after-upload": true }, new Set())
     expect(mockFetchMedia).toBeCalledTimes(0)
   })
