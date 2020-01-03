@@ -2,6 +2,7 @@ import commandLineArgs from "command-line-args"
 import commandLineUsage, { Section, OptionDefinition } from "command-line-usage"
 import { definition as configDefinition } from "./config"
 import { definition as watchDefinition } from "./watch"
+import { definition as archiveDefinition } from "./archive"
 import cs from "console-stamp"
 import { appName } from "./common"
 
@@ -9,7 +10,8 @@ cs(console)
 
 const definitions = {
   [configDefinition.command.name]: configDefinition,
-  [watchDefinition.command.name]: watchDefinition
+  [watchDefinition.command.name]: watchDefinition,
+  [archiveDefinition.command.name]: archiveDefinition
 }
 
 const helpCommand: OptionDefinition = {
@@ -17,7 +19,7 @@ const helpCommand: OptionDefinition = {
   description: "Print this usage guide."
 }
 
-const commands = [configDefinition.command, watchDefinition.command, helpCommand]
+const commands = [configDefinition.command, watchDefinition.command, archiveDefinition.command, helpCommand]
 
 const sectionTitle: Section = {
   header: appName,

@@ -20,43 +20,12 @@ jest.mock("readdirp", () => ({
 }))
 
 import * as watch from "./watch"
-
-describe("fetchMedia", () => {
-  it("Runs as long as there is nextPageToken", async () => {
-    mockRequest.mockImplementation(async options => {
-      const body = JSON.parse(options.body)
-      if (body.pageToken === 10) {
-        return {
-          data: { mediaItems: ["end"] }
-        }
-      } else {
-        const nextPageToken = body.pageToken ? body.pageToken + 1 : 1
-        return {
-          data: { mediaItems: [nextPageToken], nextPageToken }
-        }
-      }
-    })
-
-    expect(await watch.fetchMedia({})).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "end"])
-
-    mockRequest.mockReset()
-  })
-
-  it("Returns empty array if request fails", async () => {
-    mockRequest.mockImplementation(async () => {
-      throw { message: "ERROR" }
-    })
-
-    expect(await watch.fetchMedia({})).toEqual([])
-
-    mockRequest.mockReset()
-  })
-})
+import * as common from "./common"
 
 describe("sync", () => {
   beforeEach(() => {
     mockReaddirp.mockImplementationOnce(async () => [])
-    mockFetchMedia = jest.spyOn(watch, "fetchMedia").mockImplementationOnce(async () => [])
+    mockFetchMedia = jest.spyOn(common, "fetchMedia").mockImplementationOnce(async () => [])
     mockUploadMedia = jest.spyOn(watch, "uploadMedia").mockImplementationOnce(async () => true)
     mockDeleteFiles = jest.spyOn(watch, "deleteFiles").mockImplementationOnce(async () => {})
   })
@@ -130,7 +99,7 @@ describe("sync", () => {
     mockReaddirp.mockReset()
     mockReaddirp.mockImplementation(async () => [{ basename: "Foobar" }, { basename: "Barfoo" }])
     mockFetchMedia.mockReset()
-    mockFetchMedia = jest.spyOn(watch, "fetchMedia").mockImplementation(
+    mockFetchMedia = jest.spyOn(common, "fetchMedia").mockImplementation(
       () =>
         new Promise(resolve => {
           setTimeout(() => resolve([]), 100)
