@@ -77,7 +77,7 @@ const main = async () => {
     try {
       commandOptions = commandLineArgs(definitions[mainOptions.command].options, { argv })
     } catch (error) {
-      console.log(`Unknown option: ${error.optionName}`)
+      console.warn(`Unknown option: ${error.optionName}`)
       process.exit(1)
     }
     await definitions[mainOptions.command].exec(commandOptions)
