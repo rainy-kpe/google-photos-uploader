@@ -96,7 +96,7 @@ const askAlbum = async (config: Config, ask: (q: string) => Promise<string>) => 
     const albums = await getAlbums(config)
     console.log("\n* Select the target album:")
     albums.forEach((album, index) => {
-      console.log(`${index + 1} = ${album.title}`)
+      console.log(`${index + 1} = ${album ? album.title : ""}`)
     })
     do {
       const selectedAlbum = await ask("Select the album or give name for a new album: ")
