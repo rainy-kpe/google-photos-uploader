@@ -8,13 +8,18 @@ import { Config, readConfig } from "./config"
 import readdirp, { EntryInfo } from "readdirp"
 import { fetchMedia, deleteFiles } from "./common"
 
-export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
+export const uploadMedia = async (config: Config, files: EntryInfo[], deleteAfterUpload: boolean) => {
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   oauth2Client.setCredentials(config.tokens!)
 
   files.sort((a, b) => b.basename.localeCompare(a.basename))
 
-  const chunk = 10
+  files = files.filter(file => {
+    const stats = fs.statSync(file.fullPath)
+    return stats["size"] !== 0
+  })
+
+  const chunk = 1
   for (let i = 0, j = files.length; i < j; i += chunk) {
     const filesChunk = files.slice(i, i + chunk)
 
@@ -59,16 +64,21 @@ export const uploadMedia = async (config: Config, files: EntryInfo[]) => {
             }
           })
         })
+
+        if (deleteAfterUpload) {
+          await deleteFiles(filesChunk.map(file => file.fullPath))
+        }
+
       } catch (error) {
         console.warn(`Unable to create the media to the album.`)
         console.error(error.message)
-        return false
       }
+
     } else {
       console.log(`There were no successfully uploaded files`)
-      return false
     }
   }
+
   return files.length > 0
 }
 
@@ -103,10 +113,7 @@ export const sync = async (config: Config, absPath: string, options: CommandLine
   const newFiles = localFiles.filter(file => !mediaItems.find(item => item && item.filename === file.basename))
   if (newFiles.length > 0) {
     console.log(`New files found: ${newFiles.length}`)
-    const success = await uploadMedia(config, newFiles)
-    if (success && options["delete-after-upload"]) {
-      await deleteFiles(newFiles.map(file => file.fullPath))
-    }
+    await uploadMedia(config, newFiles, options["delete-after-upload"])
   } else {
     console.log("No new files found")
   }

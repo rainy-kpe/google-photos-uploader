@@ -39,7 +39,8 @@ describe("uploadMedia", () => {
     }))
     await watch.uploadMedia(
       {},
-      new Array(100).fill(0).map((_, i) => ({ path: "", basename: `${i}`, fullPath: `${i}` }))
+      new Array(100).fill(0).map((_, i) => ({ path: "", basename: `${i}`, fullPath: `${i}` })),
+      false
     )
     expect(mockRequest).toBeCalledTimes(100 + 10)
   })
