@@ -3,6 +3,7 @@ import commandLineUsage, { Section, OptionDefinition } from "command-line-usage"
 import { definition as configDefinition } from "./config"
 import { definition as watchDefinition } from "./watch"
 import { definition as archiveDefinition } from "./archive"
+import { definition as storageDefinition } from "./storage"
 import cs from "console-stamp"
 import { appName } from "./common"
 
@@ -11,7 +12,8 @@ cs(console)
 const definitions = {
   [configDefinition.command.name]: configDefinition,
   [watchDefinition.command.name]: watchDefinition,
-  [archiveDefinition.command.name]: archiveDefinition
+  [archiveDefinition.command.name]: archiveDefinition,
+  [storageDefinition.command.name]: storageDefinition
 }
 
 const helpCommand: OptionDefinition = {
@@ -19,7 +21,13 @@ const helpCommand: OptionDefinition = {
   description: "Print this usage guide."
 }
 
-const commands = [configDefinition.command, watchDefinition.command, archiveDefinition.command, helpCommand]
+const commands = [
+  configDefinition.command,
+  watchDefinition.command,
+  archiveDefinition.command,
+  storageDefinition.command,
+  helpCommand
+]
 
 const sectionTitle: Section = {
   header: appName,

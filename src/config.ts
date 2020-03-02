@@ -36,7 +36,7 @@ const askClientInfo = async (config: Config, ask: (q: string) => Promise<string>
   console.log(
     "* Go to Google Developer portal (https://console.developers.google.com)\n" +
       "* Create new project\n" +
-      "* Enable Photos Library API for it\n" +
+      "* Enable Photos Library API and Google Drive API for it\n" +
       "* Create OAuth2 credentials\n" +
       "* Enter the client id and secret below\n"
   )
@@ -53,7 +53,7 @@ const askAuthCode = async (config: Config, ask: (q: string) => Promise<string>) 
   const oauth2Client = new OAuth2Client(config.clientId, config.clientSecret, "urn:ietf:wg:oauth:2.0:oob")
   const authorizeUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
-    scope: "https://www.googleapis.com/auth/photoslibrary"
+    scope: ["https://www.googleapis.com/auth/photoslibrary", "https://www.googleapis.com/auth/drive.appdata"]
   })
 
   console.log(`* Go to the following url and grant access to your photo library:\n\n${authorizeUrl}\n`)
