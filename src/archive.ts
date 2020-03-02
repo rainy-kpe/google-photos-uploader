@@ -22,8 +22,8 @@ export const addToAlbum = async (config: Config, albumId: string, ids: string[])
         })
       })
     } catch (error) {
-      console.log(`Unable to add the media to the album.`)
-      console.log(error.message)
+      console.error(`Unable to add the media to the album.`)
+      console.error(error.message)
       return false
     }
   }
@@ -48,8 +48,8 @@ export const removeFromAlbum = async (config: Config, albumId: string, ids: stri
         })
       })
     } catch (error) {
-      console.log(`Unable to remove the media to the album.`)
-      console.log(error.message)
+      console.error(`Unable to remove the media to the album.`)
+      console.error(error.message)
       return false
     }
   }

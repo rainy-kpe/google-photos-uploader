@@ -13,29 +13,29 @@ sudo apt-get install nodejs npm
 ## Build
 
 ```
-npm run build
+yarn build
 ```
 
 ## Test
 
 ```
-npm run test
+yarn test
 ```
 
 ## Configure
 
 ```
-npm run start -- config
+yarn start -- config
 ```
 
 ## Start watching
 
 ```
-npm run start -- watch --folder .
+yarn start -- watch --folder .
 ```
 
 ## Get help
 
 ```
-npm run start -- help
+yarn start -- help
 ```

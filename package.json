@@ -15,6 +15,7 @@
     "start:watch": "node dist/main.js watch -f /home/ipcam/media --delete-after-upload",
     "start:forever": "forever start -a -l /home/ipcam/google-photos-uploader/forever.log -o /home/ipcam/google-photos-uploader/out.log-`date +%u` -e /home/ipcam/google-photos-uploader/err.log /home/ipcam/google-photos-uploader/dist/main.js watch -f /home/ipcam/media --delete-after-upload",
     "stop:forever": "forever stopall",
+    "restart:forever": "forever stopall && touch /home/ipcam/google-photos-uploader/out.log && mv -f /home/ipcam/google-photos-uploader/out.log /home/ipcam/google-photos-uploader/out.log.1 && yarn start:forever",
     "test": "jest --coverage",
     "test:watch": "jest --coverage --watch"
   },
