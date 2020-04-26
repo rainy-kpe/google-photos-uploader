@@ -95,9 +95,9 @@ export const archive = async (options: CommandLineOptions) => {
   const endDate = new Date()
   endDate.setDate(new Date().getDate() - options["keep-days"])
   console.log(`Archiving all media before ${endDate}`)
-  const archivedMedia = (await fetchMedia(config)).filter(
-    (media) => new Date(media.mediaMetadata ? media.mediaMetadata.creationTime : 0) < endDate
-  )
+  const archivedMedia = (await fetchMedia(config))
+    .filter((media) => !!media)
+    .filter((media) => new Date(media.mediaMetadata ? media.mediaMetadata.creationTime : 0) < endDate)
 
   if (archivedMedia.length === 0) {
     console.log("No media found before the archive date")
