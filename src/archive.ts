@@ -96,7 +96,7 @@ export const archive = async (options: CommandLineOptions) => {
   endDate.setDate(new Date().getDate() - options["keep-days"])
   console.log(`Archiving all media before ${endDate}`)
   const archivedMedia = (await fetchMedia(config)).filter(
-    (media) => new Date(media.mediaMetadata.creationTime) < endDate
+    (media) => new Date(media.mediaMetadata ? media.mediaMetadata.creationTime : 0) < endDate
   )
 
   if (archivedMedia.length === 0) {
