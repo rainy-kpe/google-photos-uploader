@@ -18,8 +18,8 @@ export const addToAlbum = async (config: Config, albumId: string, ids: string[])
         method: "POST",
         url: `https://photoslibrary.googleapis.com/v1/albums/${albumId}:batchAddMediaItems`,
         body: JSON.stringify({
-          mediaItemIds: idsChunk
-        })
+          mediaItemIds: idsChunk,
+        }),
       })
     } catch (error) {
       console.error(`Unable to add the media to the album.`)
@@ -44,8 +44,8 @@ export const removeFromAlbum = async (config: Config, albumId: string, ids: stri
         method: "POST",
         url: `https://photoslibrary.googleapis.com/v1/albums/${albumId}:batchRemoveMediaItems`,
         body: JSON.stringify({
-          mediaItemIds: idsChunk
-        })
+          mediaItemIds: idsChunk,
+        }),
       })
     } catch (error) {
       console.error(`Unable to remove the media to the album.`)
@@ -78,13 +78,13 @@ export const archive = async (options: CommandLineOptions) => {
   }
 
   const albums = await getAlbums(config)
-  const originalAlbum = albums.find(album => album.id === config.albumId)
+  const originalAlbum = albums.find((album) => album.id === config.albumId)
   if (!originalAlbum) {
     console.log("The original album cannot be found. Run 'config' command first.")
     return
   }
   const archiveName = `${originalAlbum.title} (Archive)`
-  let archiveAlbum = albums.find(album => album.title === archiveName)
+  let archiveAlbum = albums.find((album) => album.title === archiveName)
   if (!archiveAlbum) {
     console.log(`The archive album (${archiveName}) doesn't exists. Creating it.`)
     archiveAlbum = await createAlbum(config, archiveName)
@@ -95,8 +95,8 @@ export const archive = async (options: CommandLineOptions) => {
   const endDate = new Date()
   endDate.setDate(new Date().getDate() - options["keep-days"])
   console.log(`Archiving all media before ${endDate}`)
-  const archivedMedia = await (await fetchMedia(config)).filter(
-    media => new Date(media.mediaMetadata.creationTime) < endDate
+  const archivedMedia = (await fetchMedia(config)).filter(
+    (media) => new Date(media.mediaMetadata.creationTime) < endDate
   )
 
   if (archivedMedia.length === 0) {
@@ -108,19 +108,19 @@ export const archive = async (options: CommandLineOptions) => {
   const removeOk = await removeFromAlbum(
     config,
     originalAlbum.id,
-    archivedMedia.map(media => media.id)
+    archivedMedia.map((media) => media.id)
   )
   if (removeOk) {
     const addOk = await addToAlbum(
       config,
       archiveAlbum.id,
-      archivedMedia.map(media => media.id)
+      archivedMedia.map((media) => media.id)
     )
     if (addOk && options.folder) {
       const absPath = path.resolve(options.folder)
       console.log(`Removing archived media files from the local path: ${absPath}`)
       await deleteFiles(
-        archivedMedia.map(media => path.join(absPath, media.filename)),
+        archivedMedia.map((media) => path.join(absPath, media.filename)),
         true
       )
     }
@@ -130,20 +130,20 @@ export const archive = async (options: CommandLineOptions) => {
 export const definition = {
   command: {
     name: "archive",
-    description: "Move old photos to archive album."
+    description: "Move old photos to archive album.",
   },
   options: [
     {
       name: "folder",
       alias: "f",
       typeLabel: "{underline path}",
-      description: "The path of the watched folder."
+      description: "The path of the watched folder.",
     },
     {
       name: "keep-days",
       type: Number,
-      description: "Number of days to keep in the original album."
-    }
+      description: "Number of days to keep in the original album.",
+    },
   ],
-  exec: archive
+  exec: archive,
 }
